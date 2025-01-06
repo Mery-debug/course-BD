@@ -2,7 +2,7 @@ import psycopg2
 
 
 class DBManager:
-
+    """Класс для работы в базе данных с вакансиями и компаниями"""
     def init(self):
         pass
 
