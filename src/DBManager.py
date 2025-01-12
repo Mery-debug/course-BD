@@ -3,7 +3,7 @@ import psycopg2
 
 class DBManager:
     """Класс для работы в базе данных с вакансиями и компаниями"""
-    def init(self):
+    def __init__(self):
         pass
 
     def get_companies_and_vacancies_count(self):
