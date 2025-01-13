@@ -1,10 +1,17 @@
+import os
+
 import psycopg2
 
 
 class DBManager:
     """Класс для работы в базе данных с вакансиями и компаниями"""
     def __init__(self):
-        pass
+        self.conn = psycopg2.connect(
+            host=os.getenv("host"),
+            database=os.getenv("database"),
+            user=os.getenv("user"),
+            password=os.getenv("password")
+        )
 
     def get_companies_and_vacancies_count(self):
         """
