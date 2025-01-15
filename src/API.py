@@ -10,8 +10,10 @@ class APIhh:
         self.params = {}
         self.headers = {'text': ''}
         self.company = []
+        self.vacancies = []
 
     def search_api_hh_clients(self, company=None):
+        """Метод для работы с апи и получении информации о работодателях"""
         if company is None:
             company = [{}]
         url = "https://api.hh.ru/employers/"
@@ -25,16 +27,43 @@ class APIhh:
                     company = r.json()['items']
                     self.company.extend(company)
                     self.params['page'] += 1
-                    # return f"id {[com.get('id') for com in company]}, \nname {[com.get('name') for com in company]}, " \
-                    #     f"\nopen_vacancies {[com.get('open_vacancies') for com in company]}"
                     return company
                 else:
                     return f'Возможная причина {r.reason}'
 
+    def search_api_vacancies(self, company):
+        """
+        Поиск вакансий для найденных компаний,
+        только 20 вакансий для каждой компании,
+        чтобы не перегружать таблицы
+        """
+        vacancie = [{}]
+        vacan = []
+        url = "https://api.hh.ru/vacancies"
+        com = [com['id'] for com in company]
+        self.params = {'text': self.word, 'employer_id': com, 'page': 0, 'per_page': 100}
+        while self.params.get('page') != 20:
+            r = requests.get(url, params=self.params)
+            if r.status_code == 200:
+                vacancies = r.json()['items']
+                self.vacancies.extend(company)
+                self.params['page'] += 1
+                for vac in vacancies:
+                    vacan = [
+                        {
+                            'vacancie_id': vac['id'],
+                            'name': vac['name'],
+                            'salary': vac['salary'],
+                            'url': vac['url'],
+                            'employer_id': vac['employer']['id']
+                        }
+                    ]
+                    vacancie.append(vacan)
+        return vacancie
 
-def expectation_table(compani):
-    from beautifultable import BeautifulTable
 
+def expectation_table_employees(compani):
+    """ Функция для красивого отображения результатов поиска в таблице о работодателях"""
     table = BeautifulTable()
     table.column_headers = ["id", "company", "url", "open vacancies"]
     for com in compani:
@@ -43,5 +72,7 @@ def expectation_table(compani):
 
 
 p = APIhh('python').search_api_hh_clients()
-print(expectation_table(compani=p))
+print(expectation_table_employees(compani=p))
+v = APIhh('python').search_api_vacancies(company=p)
+print(v)
 
