@@ -25,7 +25,7 @@ class APIhh:
                     self.company.extend(company)
                     self.params['page'] += 1
                     return f"id {[com.get('id') for com in company]}, \nname {[com.get('name') for com in company]}, " \
-                           f"\nopen_vacancies {[com.get('open_vacancies') for com in company]}"
+                        f"\nopen_vacancies {[com.get('open_vacancies') for com in company]}"
                 else:
                     return f'Возможная причина {r.reason}'
 
