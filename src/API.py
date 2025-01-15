@@ -1,6 +1,7 @@
 import requests
 import os
 from dotenv import load_dotenv
+from beautifultable import BeautifulTable
 
 
 class APIhh:
@@ -24,11 +25,23 @@ class APIhh:
                     company = r.json()['items']
                     self.company.extend(company)
                     self.params['page'] += 1
-                    return f"id {[com.get('id') for com in company]}, \nname {[com.get('name') for com in company]}, " \
-                        f"\nopen_vacancies {[com.get('open_vacancies') for com in company]}"
+                    # return f"id {[com.get('id') for com in company]}, \nname {[com.get('name') for com in company]}, " \
+                    #     f"\nopen_vacancies {[com.get('open_vacancies') for com in company]}"
+                    return company
                 else:
                     return f'Возможная причина {r.reason}'
 
 
+def expectation_table(compani):
+    from beautifultable import BeautifulTable
+
+    table = BeautifulTable()
+    table.column_headers = ["id", "company", "url", "open vacancies"]
+    for com in compani:
+        table.append_row([com['id'], com['name'], com['url'], com['open_vacancies']])
+    return table
+
+
 p = APIhh('python').search_api_hh_clients()
-print(p)
+print(expectation_table(compani=p))
+
