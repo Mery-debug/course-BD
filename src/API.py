@@ -1,3 +1,5 @@
+from typing import Any
+
 import requests
 import os
 from dotenv import load_dotenv
@@ -12,7 +14,7 @@ class APIhh:
         self.company = []
         self.vacancies = []
 
-    def search_api_hh_clients(self, company=None):
+    def search_api_hh_clients(self, company: list[dict] = None) -> Any[str | list[dict]]:
         """Метод для работы с апи и получении информации о работодателях"""
         if company is None:
             company = [{}]
@@ -31,7 +33,7 @@ class APIhh:
                 else:
                     return f'Возможная причина {r.reason}'
 
-    def search_api_vacancies(self, company):
+    def search_api_vacancies(self, company: list[dict]) -> list[dict]:
         """
         Поиск вакансий для найденных компаний
         """
@@ -49,17 +51,17 @@ class APIhh:
                 for vac in vacancies:
                     if vac['salary'] and vac['salary']['currency'] == 'RUR':
                         vacan = {
-                                'vacancie_id': vac['id'],
-                                'name': vac['name'],
-                                'salary': vac['salary'],
-                                'url': vac['url'],
-                                'employer_id': vac['employer']['id']
-                            }
+                            'vacancie_id': vac['id'],
+                            'name': vac['name'],
+                            'salary': vac['salary'],
+                            'url': vac['url'],
+                            'employer_id': vac['employer']['id']
+                        }
                         vacancie.append(vacan)
             return vacancie
 
 
-def expectation_table_employees(compani):
+def expectation_table_employees(compani: list[dict]) -> BeautifulTable:
     """ Функция для красивого отображения результатов поиска в таблице о работодателях"""
     table = BeautifulTable()
     table.column_headers = ["id", "company", "url", "open vacancies"]
@@ -68,18 +70,17 @@ def expectation_table_employees(compani):
     return table
 
 
-def expectation_table_vacancies(vacancie):
+def expectation_table_vacancies(vacancie: list[dict]) -> BeautifulTable:
     """Функция отображения результатов работы апи вакансий найденных в первом апи-методе компаний"""
     table = BeautifulTable()
     table.column_headers = ["vacancie id", "name", "salary from", "salary to", "url", "employer id"]
     for vac in vacancie:
-        table.append_row([vac['vacancie_id'], vac['name'], vac['salary']['from'], vac['salary']['to'], vac['url'], vac['employer_id']])
+        table.append_row([vac['vacancie_id'], vac['name'], vac['salary']['from'], vac['salary']['to'], vac['url'],
+                          vac['employer_id']])
     return table
 
 
-p = APIhh('python').search_api_hh_clients()
-print(expectation_table_employees(compani=p))
-v = APIhh('python').search_api_vacancies(company=p)
-print(expectation_table_vacancies(vacancie=v))
-# print(v)
-
+# p = APIhh('python').search_api_hh_clients()
+# print(expectation_table_employees(compani=p))
+# v = APIhh('python').search_api_vacancies(company=p)
+# print(expectation_table_vacancies(vacancie=v))
