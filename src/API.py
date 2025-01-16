@@ -37,8 +37,8 @@ class APIhh:
         только 20 вакансий для каждой компании,
         чтобы не перегружать таблицы
         """
-        vacancie = [{}]
-        vacan = []
+        vacancie = []
+        vacan = {}
         url = "https://api.hh.ru/vacancies"
         com = [com['id'] for com in company]
         self.params = {'text': self.word, 'employer_id': com, 'page': 0, 'per_page': 100}
@@ -49,17 +49,16 @@ class APIhh:
                 self.vacancies.extend(company)
                 self.params['page'] += 1
                 for vac in vacancies:
-                    vacan = [
-                        {
-                            'vacancie_id': vac['id'],
-                            'name': vac['name'],
-                            'salary': vac['salary'],
-                            'url': vac['url'],
-                            'employer_id': vac['employer']['id']
-                        }
-                    ]
-                    vacancie.append(vacan)
-        return vacancie
+                    if vac['salary'] and vac['salary']['currency'] == 'RUR':
+                        vacan = {
+                                'vacancie_id': vac['id'],
+                                'name': vac['name'],
+                                'salary': vac['salary'],
+                                'url': vac['url'],
+                                'employer_id': vac['employer']['id']
+                            }
+                        vacancie.append(vacan)
+            return vacancie
 
 
 def expectation_table_employees(compani):
@@ -71,8 +70,18 @@ def expectation_table_employees(compani):
     return table
 
 
+def expectation_table_vacancies(vacancie):
+    """Функция отображения результатов работы апи вакансий найденных в первом апи-методе компаний"""
+    table = BeautifulTable()
+    table.column_headers = ["vacancie id", "name", "salary from", "salary to", "url", "employer id"]
+    for vac in vacancie:
+        table.append_row([vac['vacancie_id'], vac['name'], vac['salary']['from'], vac['salary']['to'], vac['url'], vac['employer_id']])
+    return table
+
+
 p = APIhh('python').search_api_hh_clients()
 print(expectation_table_employees(compani=p))
 v = APIhh('python').search_api_vacancies(company=p)
-print(v)
+print(expectation_table_vacancies(vacancie=v))
+# print(v)
 
