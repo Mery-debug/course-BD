@@ -1,4 +1,6 @@
 import os
+from typing import Any
+
 import psycopg2
 from dotenv import load_dotenv
 
@@ -51,6 +53,48 @@ class DBManager:
                     employer_id INT REFERENCES company(id)
                 )
             """)
+
+        conn.commit()
+        conn.close()
+
+    def save_data_to_database(self, company: list[dict], vacancy: list[dict], params: dict):
+        """
+        Сохранение данных о компаниях и вакансиях в базу данных
+        """
+        load_dotenv()
+        db_name = os.getenv("dbname")
+        conn = psycopg2.connect(dbname=db_name, **params)
+
+        with conn.cursor() as cur:
+            for com in company:
+                company_id = com['id']
+                company_url = com['url']
+                company_name = com['name']
+                company_open_vacancies = com['open_vacancies']
+                cur.execute(
+                    """
+                    INSERT INTO company (id, name, url, open_vacancies)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING id
+                    """,
+                    (company_id, company_name, company_url, company_open_vacancies)
+                )
+                company_id = cur.fetchone()[0]
+                employer_id = company_id
+                for vac in vacancy:
+                    vacancy_id = vac['vacancie_id']
+                    vacancy_name = vac['name']
+                    vacancy_sal_from = vac['salary']['from']
+                    vacancy_sal_to = vac['salary']['to']
+                    vacancy_url = vac['url']
+                    vacancy_employer_id = vac['employer_id']
+                    cur.execute(
+                        """
+                        INSERT INTO vacancies (vacancies_id, name, salary from, salary to, vacancies_url, employer_id)
+                        VALUES (%s, %s, %s, %s)
+                        """,
+                        (vacancy_id, vacancy_name, vacancy_sal_from, vacancy_sal_to, vacancy_url, vacancy_employer_id)
+                    )
 
         conn.commit()
         conn.close()
