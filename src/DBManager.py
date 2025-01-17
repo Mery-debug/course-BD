@@ -94,7 +94,9 @@ def save_data_to_database(company: list[dict], vacancy: list[dict], **params: di
 class DBManager:
     """Класс для работы в базе данных с вакансиями и компаниями"""
     def __init__(self):
+        load_dotenv()
         self.conn = psycopg2.connect(
+            db_name=os.getenv("dbname"),
             host=os.getenv("host"),
             database=os.getenv("database"),
             user=os.getenv("user"),
@@ -105,29 +107,80 @@ class DBManager:
         """
         Получает список всех компаний и количество вакансий у каждой компании
         """
+        conn = self.conn
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT name, open vacancy FROM company
+                """
+            )
+            conn.commit()
+            conn.close()
+        for result in cur:
+            return result
 
-    def get_all_vacancies(self):
+
+    def get_all_vacancies(self) -> Any:
         """
         Получает список всех вакансий с указанием названия компании,
         названия вакансии и зарплаты и ссылки на вакансию
         """
-        pass
+        load_dotenv()
+        conn = self.conn
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT * FROM vacancies
+                """
+            )
+            conn.commit()
+            conn.close()
+        for total in cur:
+            return total
 
     def get_avg_salary(self):
         """
         Получает среднюю зарплату по вакансиям
         """
-        pass
+        conn = self.conn
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                 SELECT (SUM(salary to) - SUM(salary from)) / COUNT(*) AS avg salary FROM vacancies
+                """
+            )
+            avg_salary = cur.fetchone()[0]
+            conn.commit()
+            conn.close()
+        return avg_salary
 
     def get_vacancies_with_higher_salary(self):
         """
         Получает список всех вакансий, у которых зарплата выше средней по всем вакансиям
         """
-        pass
+        conn = self.conn
+        avg_salary = self.get_avg_salary()
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT * FROM vacancies WHERE (salary_to + salary_from) / 2 > %s
+                """, avg_salary)
+            vacancies = cur.fetchall()
+            conn.commit()
+            conn.close()
+        return vacancies
 
-    def get_vacancies_with_keyword(self):
+    def get_vacancies_with_keyword(self, word: str):
         """
         Получает список всех вакансий,
         в названии которых содержатся переданные в метод слова, например python
         """
-        pass
+        conn = self.conn
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT  FROM vacancies
+                """
+            )
+            conn.commit()
+            conn.close()
