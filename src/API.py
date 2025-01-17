@@ -3,8 +3,6 @@ from typing import Any
 import requests
 import os
 from dotenv import load_dotenv
-from beautifultable import BeautifulTable
-from src.decoration import wrapper
 
 
 class APIhh:
@@ -16,10 +14,10 @@ class APIhh:
         self.vacancies = []
 
     # @wrapper
-    def search_api_hh_clients(self, company: list[dict] = None) -> Any:
+    def search_api_hh_clients(self, company: list[dict] = None) -> list[dict]:
         """Метод для работы с апи и получении информации о работодателях"""
         if company is None:
-            company = [{}]
+            company = []
         compan = {}
         url = "https://api.hh.ru/employers/"
         load_dotenv()
@@ -40,8 +38,8 @@ class APIhh:
                     self.company.extend(company)
                     self.params['page'] += 1
                     return company
-                else:
-                    return f'Возможная причина {r.reason}'
+                # else:
+                #     return f'Возможная причина {r.reason}'
 
     # @wrapper
     def search_api_vacancies(self, company: list[dict]) -> list[dict]:

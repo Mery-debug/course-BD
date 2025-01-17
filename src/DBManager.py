@@ -5,28 +5,35 @@ import psycopg2
 from dotenv import load_dotenv
 
 
-def create_database(**params: dict):
+def create_database():
     """
     Создание базы данных для хранения информации о работодателях и их вакансиях
     """
-    conn = psycopg2.connect(dbname='postgres', **params)
+    load_dotenv()
+    conn = psycopg2.connect(db_name=os.getenv("dbname"), database="api_db",
+                            host=os.getenv("host"),
+                            user=os.getenv("user"),
+                            password=os.getenv("password"))
     conn.autocommit = True
     cur = conn.cursor()
 
     load_dotenv()
-    db_name = os.getenv('database')
+    db_name = os.getenv('dbname')
 
-    cur.execute(f"DROP DATABASE IF EXIST {db_name}")
+    cur.execute(f"DROP DATABASE IF EXISTS {db_name}")
     cur.execute(f"CREATE DATABASE {db_name}")
-
+    conn.commit()
     conn.close()
 
-    conn = psycopg2.connect(dbname=db_name, **params)
+    conn = psycopg2.connect(host=os.getenv("host"), database="api_db",
+                            user=os.getenv("user"),
+                            password=os.getenv("password"))
     with conn.cursor() as cur:
         cur.execute("""
+            DROP TABLE IF EXISTS company CASCADE;
             CREATE TABLE company (
                 id SERIAL PRIMARY KEY,
-                company VARCHAR(255) NOT NULL,
+                name VARCHAR(255) NOT NULL,
                 url TEXT NOT NULL,
                 open_vacancies INTEGER
             )
@@ -34,11 +41,12 @@ def create_database(**params: dict):
 
     with conn.cursor() as cur:
         cur.execute("""
+            DROP TABLE IF EXISTS vacancies;
             CREATE TABLE vacancies (
                 vacancies_id SERIAL PRIMARY KEY,
                 name VARCHAR NOT NULL,
-                salary from INT,
-                salary to INT,
+                salary_from INT,
+                salary_to INT,
                 vacancies_url TEXT,
                 employer_id INT REFERENCES company(id)
             )
@@ -49,45 +57,64 @@ def create_database(**params: dict):
     return "База данных создана"
 
 
-def save_data_to_database(company: list[dict], vacancy: list[dict], **params: dict):
+def save_data_to_database(company: list[dict], vacancy: list[dict]):
     """
     Сохранение данных о компаниях и вакансиях в базу данных
     """
     load_dotenv()
-    db_name = os.getenv("dbname")
-    conn = psycopg2.connect(dbname=db_name, **params)
+    conn = psycopg2.connect(host=os.getenv("host"), database="api_db",
+                            user=os.getenv("user"),
+                            password=os.getenv("password"))
 
     with conn.cursor() as cur:
         for com in company:
-            company_id = com['id']
-            company_url = com['url']
-            company_name = com['name']
-            company_open_vacancies = com['open_vacancies']
+            company_id = com.get('id')
+            company_url = com.get('url')
+            company_name = com.get('name')
+            company_open_vacancies = com.get('open_vacancies')
             cur.execute(
                 """
                 INSERT INTO company (id, name, url, open_vacancies)
                 VALUES (%s, %s, %s, %s)
-                RETURNING id
                 """,
-                (company_id, company_name, company_url, company_open_vacancies)
+                (company_id, str(company_name), str(company_url), int(company_open_vacancies))
             )
-            company_id = cur.fetchone()[0]
-            employer_id = company_id
+            # company_id = cur.fetchone()[0]
+            # employer_id = company_id
             for vac in vacancy:
-                vacancy_id = vac['vacancie_id']
-                vacancy_name = vac['name']
-                vacancy_sal_from = vac['salary']['from']
-                vacancy_sal_to = vac['salary']['to']
-                vacancy_url = vac['url']
-                vacancy_employer_id = vac['employer_id']
-                cur.execute(
-                    """
-                    INSERT INTO vacancies (vacancies_id, name, salary from, salary to, vacancies_url, employer_id)
-                    VALUES (%s, %s, %s, %s)
-                    """,
-                    (vacancy_id, vacancy_name, vacancy_sal_from, vacancy_sal_to, vacancy_url, vacancy_employer_id)
-                )
-
+                vacancy_id = vac.get('vacancie_id')
+                vacancy_name = vac.get('name')
+                vacancy_sal_from = vac.get('salary').get('from')
+                vacancy_sal_to = vac.get('salary').get('to')
+                vacancy_url = vac.get('url')
+                vacancy_employer_id = vac.get('employer_id')
+                if vacancy_sal_from and vacancy_sal_to:
+                    cur.execute(
+                        """
+                        INSERT INTO vacancies (vacancies_id, name, salary_from, salary_to, vacancies_url, employer_id)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        """,
+                        (int(vacancy_id), str(vacancy_name), int(vacancy_sal_from), int(vacancy_sal_to),
+                         str(vacancy_url), vacancy_employer_id)
+                    )
+                elif not vacancy_sal_to:
+                    cur.execute(
+                        """
+                        INSERT INTO vacancies (vacancies_id, name, salary_from, salary_to, vacancies_url, employer_id)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        """,
+                        (int(vacancy_id), str(vacancy_name), int(vacancy_sal_from), 0,
+                         str(vacancy_url), int(vacancy_employer_id))
+                    )
+                elif not vacancy_sal_from:
+                    cur.execute(
+                        """
+                        INSERT INTO vacancies (vacancies_id, name, salary_from, salary_to, vacancies_url, employer_id)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        """,
+                        (int(vacancy_id), str(vacancy_name), 0, int(vacancy_sal_to),
+                         str(vacancy_url), int(vacancy_employer_id))
+                    )
     conn.commit()
     conn.close()
     return "База данных заполнена"
@@ -101,8 +128,7 @@ class DBManager:
         self.conn = psycopg2.connect(
             db_name=os.getenv("dbname"),
             host=os.getenv("host"),
-            database=os.getenv("database"),
-            user=os.getenv("user"),
+            user=os.getenv("user"), database="api_db",
             password=os.getenv("password")
         )
 
@@ -117,10 +143,10 @@ class DBManager:
                 SELECT name, open vacancy FROM company
                 """
             )
+            result = cur.fetchall()
             conn.commit()
             conn.close()
-        for result in cur:
-            return result
+        return result
 
     def get_all_vacancies(self) -> Any:
         """
@@ -135,10 +161,10 @@ class DBManager:
                 SELECT * FROM vacancies
                 """
             )
+            total = cur.fetchall()
             conn.commit()
             conn.close()
-        for total in cur:
-            return total
+        return total
 
     def get_avg_salary(self):
         """
@@ -148,7 +174,7 @@ class DBManager:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                 SELECT (SUM(salary to) - SUM(salary from)) / COUNT(*) AS avg salary FROM vacancies
+                 SELECT (SUM(salary_to) - SUM(salary_from)) / COUNT(*) AS avg salary FROM vacancies
                 """
             )
             avg_salary = cur.fetchone()[0]
