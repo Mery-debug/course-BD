@@ -46,6 +46,7 @@ def create_database(**params: dict):
 
     conn.commit()
     conn.close()
+    return "База данных создана"
 
 
 def save_data_to_database(company: list[dict], vacancy: list[dict], **params: dict):
@@ -89,10 +90,12 @@ def save_data_to_database(company: list[dict], vacancy: list[dict], **params: di
 
     conn.commit()
     conn.close()
+    return "База данных заполнена"
 
 
 class DBManager:
     """Класс для работы в базе данных с вакансиями и компаниями"""
+
     def __init__(self):
         load_dotenv()
         self.conn = psycopg2.connect(
@@ -118,7 +121,6 @@ class DBManager:
             conn.close()
         for result in cur:
             return result
-
 
     def get_all_vacancies(self) -> Any:
         """
@@ -179,8 +181,10 @@ class DBManager:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT  FROM vacancies
-                """
+                SELECT * FROM vacancies WHERE %s in name
+                """, word
             )
+            result = cur.fetchall()
             conn.commit()
             conn.close()
+        return result
