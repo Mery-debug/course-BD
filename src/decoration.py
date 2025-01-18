@@ -1,5 +1,6 @@
-from typing import Any, Callable
 from functools import wraps
+from typing import Any, Callable
+
 from beautifultable import BeautifulTable
 
 
@@ -17,4 +18,3 @@ def wrapper(func: Callable) -> Callable:
         return table
 
     return inner
-
