@@ -4,6 +4,9 @@ from src.user_utils import user_params
 
 
 def main():
+    """
+    Главная функция для запуска работы всего проекта
+    """
     u = user_params()
     a = list(APIhh(u).search_api_hh_clients())
     v = list(APIhh(u).search_api_vacancies(a))
