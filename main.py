@@ -3,10 +3,11 @@ from src.DBManager import DBManager, create_database, save_data_to_database
 from src.user_utils import user_params
 
 
-def main():
+def main() -> list:
     """
     Главная функция для запуска работы всего проекта
     """
+    result = []
     u = user_params()
     a = list(APIhh(u).search_api_hh_clients())
     v = list(APIhh(u).search_api_vacancies(a))
@@ -32,8 +33,6 @@ def main():
         result = DBManager().get_vacancies_with_higher_salary()
     elif user_1 == 5:
         result = DBManager().get_vacancies_with_keyword(u)
-    else:
-        return "Ничего не найдено"
     return result
 
 
