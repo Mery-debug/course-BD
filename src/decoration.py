@@ -17,3 +17,4 @@ def wrapper(func: Callable) -> Callable:
         return table
 
     return inner
+

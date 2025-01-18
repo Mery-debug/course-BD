@@ -77,44 +77,44 @@ def save_data_to_database(company: list[dict], vacancy: list[dict]):
                 INSERT INTO company (id, name, url, open_vacancies)
                 VALUES (%s, %s, %s, %s)
                 """,
-                (company_id, str(company_name), str(company_url), int(company_open_vacancies))
+                (str(company_id), str(company_name), str(company_url), int(company_open_vacancies))
             )
             # company_id = cur.fetchone()[0]
             # employer_id = company_id
-            for vac in vacancy:
-                vacancy_id = vac.get('vacancie_id')
-                vacancy_name = vac.get('name')
-                vacancy_sal_from = vac.get('salary').get('from')
-                vacancy_sal_to = vac.get('salary').get('to')
-                vacancy_url = vac.get('url')
-                vacancy_employer_id = vac.get('employer_id')
-                if vacancy_sal_from and vacancy_sal_to:
-                    cur.execute(
-                        """
-                        INSERT INTO vacancies (vacancies_id, name, salary_from, salary_to, vacancies_url, employer_id)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                        """,
-                        (int(vacancy_id), str(vacancy_name), int(vacancy_sal_from), int(vacancy_sal_to),
-                         str(vacancy_url), vacancy_employer_id)
-                    )
-                elif not vacancy_sal_to:
-                    cur.execute(
-                        """
-                        INSERT INTO vacancies (vacancies_id, name, salary_from, salary_to, vacancies_url, employer_id)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                        """,
-                        (int(vacancy_id), str(vacancy_name), int(vacancy_sal_from), 0,
-                         str(vacancy_url), int(vacancy_employer_id))
-                    )
-                elif not vacancy_sal_from:
-                    cur.execute(
-                        """
-                        INSERT INTO vacancies (vacancies_id, name, salary_from, salary_to, vacancies_url, employer_id)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                        """,
-                        (int(vacancy_id), str(vacancy_name), 0, int(vacancy_sal_to),
-                         str(vacancy_url), int(vacancy_employer_id))
-                    )
+        for vac in vacancy:
+            vacancy_id = vac.get('vacancie_id')
+            vacancy_name = vac.get('name')
+            vacancy_sal_from = vac.get('salary').get('from')
+            vacancy_sal_to = vac.get('salary').get('to')
+            vacancy_url = vac.get('url')
+            vacancy_employer_id = vac.get('employer_id')
+            if vacancy_sal_from and vacancy_sal_to:
+                cur.execute(
+                    """
+                    INSERT INTO vacancies (vacancies_id, name, salary_from, salary_to, vacancies_url, employer_id)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (int(vacancy_id), str(vacancy_name), int(vacancy_sal_from), int(vacancy_sal_to),
+                     str(vacancy_url), str(vacancy_employer_id))
+                )
+            elif not vacancy_sal_to:
+                cur.execute(
+                    """
+                    INSERT INTO vacancies (vacancies_id, name, salary_from, salary_to, vacancies_url, employer_id)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (int(vacancy_id), str(vacancy_name), int(vacancy_sal_from), 0,
+                     str(vacancy_url), int(vacancy_employer_id))
+                )
+            elif not vacancy_sal_from:
+                cur.execute(
+                    """
+                    INSERT INTO vacancies (vacancies_id, name, salary_from, salary_to, vacancies_url, employer_id)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (int(vacancy_id), str(vacancy_name), 0, int(vacancy_sal_to),
+                     str(vacancy_url), int(vacancy_employer_id))
+                )
     conn.commit()
     conn.close()
     return "База данных заполнена"
@@ -132,7 +132,7 @@ class DBManager:
             password=os.getenv("password")
         )
 
-    def get_companies_and_vacancies_count(self):
+    def get_companies_and_vacancies_count(self) -> list:
         """
         Получает список всех компаний и количество вакансий у каждой компании
         """
@@ -140,7 +140,7 @@ class DBManager:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT name, open vacancy FROM company
+                SELECT name, open_vacancies FROM company
                 """
             )
             result = cur.fetchall()
@@ -166,7 +166,7 @@ class DBManager:
             conn.close()
         return total
 
-    def get_avg_salary(self):
+    def get_avg_salary(self) -> list:
         """
         Получает среднюю зарплату по вакансиям
         """
@@ -174,31 +174,31 @@ class DBManager:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                 SELECT (SUM(salary_to) - SUM(salary_from)) / COUNT(*) AS avg salary FROM vacancies
+                 SELECT ((SUM(salary_to) + SUM(salary_from)) / 2) / COUNT(*) AS avg_salary FROM vacancies
                 """
             )
             avg_salary = cur.fetchone()[0]
             conn.commit()
-            conn.close()
         return avg_salary
 
-    def get_vacancies_with_higher_salary(self):
+    def get_vacancies_with_higher_salary(self) -> list:
         """
         Получает список всех вакансий, у которых зарплата выше средней по всем вакансиям
         """
         conn = self.conn
         avg_salary = self.get_avg_salary()
+        conn = self.conn
         with conn.cursor() as cur:
             cur.execute(
                 """
                 SELECT * FROM vacancies WHERE (salary_to + salary_from) / 2 > %s
-                """, avg_salary)
+                """, [avg_salary])
             vacancies = cur.fetchall()
             conn.commit()
             conn.close()
         return vacancies
 
-    def get_vacancies_with_keyword(self, word: str):
+    def get_vacancies_with_keyword(self, word: str) -> list:
         """
         Получает список всех вакансий,
         в названии которых содержатся переданные в метод слова, например python
@@ -207,10 +207,10 @@ class DBManager:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT * FROM vacancies WHERE %s in name
-                """, word
+                SELECT * FROM vacancies WHERE name ILIKE %s
+                """, ('%' + word + '%',)
             )
             result = cur.fetchall()
             conn.commit()
-            conn.close()
+        conn.close()
         return result
